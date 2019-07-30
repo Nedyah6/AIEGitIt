@@ -9,7 +9,7 @@ SDL_Renderer *renderer;
 SDL_Surface *bat;
 SDL_Surface *ball;
 SDL_Surface *bk;
-
+// dont forget to sourcetree 
 SDL_Texture *ballTexture;
 SDL_Texture *bkTexture;
 SDL_Texture *batTexture;
