@@ -1,7 +1,9 @@
 //#include "SDL.h"
 #include <SDL.h>
 #include <iostream>
+void winning();
 void Destroy();
+void GameOver();
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Surface *bat;
@@ -14,7 +16,7 @@ SDL_Texture *batTexture;
 
 SDL_Event event;
 bool bQuit = false;
-int	ballx = 10;
+int	ballx = 1;
 int bally = 10;
 int ballVelx = 1;
 int ballVely = 1;
@@ -49,12 +51,10 @@ void Destroy()
 	SDL_FreeSurface(ball);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
-
 }
-void InitializeBrick()
+void Initialize()
 {
-
-	// need a better way to do this maybe for loop
+		// need a better way to do this maybe for loop
 		// dynamic array 
 	brickRect[0][0] = { 50, 50, brickW, brickH };
 	brickRect[0][1] = { 150, 50, brickW, brickH };
@@ -91,23 +91,34 @@ void moveBall()
 	ballx = ballx + ballVelx;
 	bally = bally + ballVely;
 }
-void gameOver()
+void GameOver()
 {
 	SDL_Surface *goSurface = SDL_LoadBMP("bk.bmp");
-
 	SDL_Texture *goTexture = SDL_CreateTextureFromSurface(renderer, goSurface);
 	SDL_Rect goRect = { 0,0, bkw, bkh };
 	SDL_RenderCopy(renderer, goTexture, NULL, &goRect);
 	SDL_RenderPresent(renderer);
 	SDL_Delay(2);
-	Destroy();
-	SDL_Quit();
+//	Destroy();
+	//SDL_Quit();
+	deleteBrickCount = 0;
+
+	ballx = 0;
+	bally = 0;
+	// bat
+// divide by 2 to because bat should update on center of sceen and a just above bottum ofscreen
+int batx = bkw / 2;
+// -30 to get bat to apear just above the buttom of the screen
+int baty = bkh-30;
+
+	Initialize();
+	
 }
 void ballCollisoin()
 {
 	// if the ball goes out of screen bounce it on x 
 	// -30 is the width of the ball 
-	if (ballx < bkwmin || ballx> bkw-30)
+	if (ballx < bkwmin || ballx> bkw -30)
 	{
 		ballVelx =- ballVelx;
 	}
@@ -117,16 +128,17 @@ void ballCollisoin()
 	{
 		ballVely =-ballVely;
 	}
+	if (bally > bkh + 60)
+	{
+		GameOver();
+
+	}
+
 	int ballScaling = 20;
 	// ball scalin means the ball will hit top of the bat 
-	if (bally + ballScaling >= baty && bally + ballScaling <= baty + 30 && ballx + ballScaling >= ballx && ballx + ballScaling <= batx + 60)
+	if (bally + ballScaling >= baty && bally + ballScaling <= baty + 30 && ballx + ballScaling >= batx && ballx + ballScaling <= batx + 60)
 	{															// +30 for top side of bat
 		ballVely = -ballVely;
-	}
-	if (ballVely > bkh + 60)
-	{
-		gameOver();
-
 	}
 
 }
@@ -167,10 +179,8 @@ void ballBrickCol()
 				brickRect[i][j].x = 3000;
 				ballVely= ballVely;
 				deleteBrickCount++;
-
 			}
 		}
-
 	}
 }
 
@@ -182,8 +192,6 @@ void winning()
 	SDL_RenderCopy(renderer, winTexture, NULL, &winRect);
 	SDL_RenderPresent(renderer);
 	SDL_Delay(30000);
-
-
 	Destroy();
 	SDL_Quit();
 }
@@ -194,31 +202,21 @@ int main(int argc, char *argv[])
 {
 	
 	SDL_Init(SDL_INIT_VIDEO);
-
-
 	// create window instance
 	window = SDL_CreateWindow("game ", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED, 800, 600, 0 );
-
 	// -1 means first diplay detected
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-
-
 	SDL_Rect bkrect = { 0,0, 800, 600};
-	InitializeBrick();
+	Initialize();
 	bat = SDL_LoadBMP("bat.bmp");
 	ball = SDL_LoadBMP("ball.bmp");
 	bk = SDL_LoadBMP("bk.bmp");
-	
 	brick = SDL_LoadBMP("brick.bmp");
 	ballTexture = SDL_CreateTextureFromSurface(renderer, ball);
 	bkTexture = SDL_CreateTextureFromSurface(renderer, bk);
 	batTexture = SDL_CreateTextureFromSurface(renderer, bat);
 	brickTexture = SDL_CreateTextureFromSurface(renderer, brick);
-
-
 	// no need to get pos because its in in ballrect
-
-
 	// game loop
 	while (!bQuit)
 	{
@@ -233,16 +231,14 @@ int main(int argc, char *argv[])
 		EventHandler();
 		if (deleteBrickCount == numberOfBricks)
 		{
-			winning();
-
+		//	winning();
+			GameOver();
 		}
 	
 		// not sure this is a good one, renderering background everyframe
 		// need to check this later
 		SDL_RenderCopy(renderer, bkTexture, NULL, &bkrect);
 		SDL_RenderCopy(renderer, ballTexture, NULL, &ballrect);
-
-
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][0]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][1]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][2]);
@@ -250,7 +246,6 @@ int main(int argc, char *argv[])
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][4]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][5]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][6]);
-
 		// renderpresent does not need sdlrendercopy only once
 		// bat needs to be constant update 
 		SDL_RenderCopy(renderer, batTexture, NULL, &batrect);
