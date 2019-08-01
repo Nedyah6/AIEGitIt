@@ -1,6 +1,12 @@
 //#include "SDL.h"
 #include <SDL.h>
 #include <iostream>
+//#include <SDL/SDL_ttf.h>
+#include <SDL_ttf.h>
+#include <string>
+#include<sstream>
+using namespace std;
+
 void winning();
 void Destroy();
 void GameOver();
@@ -9,6 +15,8 @@ SDL_Renderer *renderer;
 SDL_Surface *bat;
 SDL_Surface *ball;
 SDL_Surface *bk;
+
+
 // dont forget to sourcetree 
 SDL_Texture *ballTexture;
 SDL_Texture *bkTexture;
@@ -16,6 +24,7 @@ SDL_Texture *batTexture;
 
 SDL_Event event;
 bool bQuit = false;
+bool bBallHitBat = false;
 int	ballx = 1;
 int bally = 10;
 int ballVelx = 1;
@@ -27,18 +36,26 @@ int brickW = 80;
 int brickH = 35;
 int bkwmin = 0;
 int bkhmin = 0;
+int score = 0;
 int deleteBrickCount = 0;
 int numberOfBricks = 7;
 SDL_Surface *brick;
 SDL_Texture *brickTexture;
 SDL_Rect brickRect[3][6];
 SDL_Rect ballrect;
+TTF_Font *times;
+SDL_Color fontColor{ 255,0,255 };
+// location of score 
+SDL_Rect playerScoreRect;
 
 // bat
 // divide by 2 to because bat should update on center of sceen and a just above bottum ofscreen
 int batx = bkw / 2;
 // -30 to get bat to apear just above the buttom of the screen
 int baty = bkh-30;
+
+
+
 void Destroy()
 {
 	SDL_DestroyTexture(batTexture);
@@ -55,7 +72,11 @@ void Destroy()
 void Initialize()
 {
 		// need a better way to do this maybe for loop
-		// dynamic array 
+		// dynamic array
+	playerScoreRect.x =50;
+	playerScoreRect.y =700;
+	bBallHitBat = false;
+	score = 0;
 	brickRect[0][0] = { 50, 50, brickW, brickH };
 	brickRect[0][1] = { 150, 50, brickW, brickH };
 	brickRect[0][2] = { 250, 50, brickW, brickH };
@@ -102,7 +123,7 @@ void GameOver()
 //	Destroy();
 	//SDL_Quit();
 	deleteBrickCount = 0;
-
+	score = 0;
 	ballx = 0;
 	bally = 0;
 	// bat
@@ -118,6 +139,7 @@ void ballCollisoin()
 {
 	// if the ball goes out of screen bounce it on x 
 	// -30 is the width of the ball 
+	
 	if (ballx < bkwmin || ballx> bkw -30)
 	{
 		ballVelx =- ballVelx;
@@ -138,7 +160,8 @@ void ballCollisoin()
 	// ball scalin means the ball will hit top of the bat 
 	if (bally + ballScaling >= baty && bally + ballScaling <= baty + 30 && ballx + ballScaling >= batx && ballx + ballScaling <= batx + 60)
 	{															// +30 for top side of bat
-		ballVely = -ballVely;
+		ballVely =-ballVely;
+		bBallHitBat = true;
 	}
 
 }
@@ -167,18 +190,22 @@ bool ballBrickColDetect(SDL_Rect rect1, SDL_Rect rect2)
 
 void ballBrickCol()
 {
-	bool a;
-	for (int i = 0; i <1; i++)
+	if (bBallHitBat == true)
 	{
-		for (int j = 0; j < 7; j++)
+		bool a;
+		for (int i = 0; i < 1; i++)
 		{
-			a = ballBrickColDetect(brickRect[i][j], ballrect);
-			if (a == true)
+			for (int j = 0; j < 7; j++)
 			{
-				// get off screen man 
-				brickRect[i][j].x = 3000;
-				ballVely= ballVely;
-				deleteBrickCount++;
+				a = ballBrickColDetect(brickRect[i][j], ballrect);
+				if (a == true)
+				{
+					// get off screen man 
+					brickRect[i][j].x = 3000;
+					ballVely = ballVely;
+					score += 10;
+					deleteBrickCount++;
+				}
 			}
 		}
 	}
@@ -202,12 +229,30 @@ int main(int argc, char *argv[])
 {
 	
 	SDL_Init(SDL_INIT_VIDEO);
+	// make sure the text loads init
+	//if (TTF_Init() < 0)
+	
+	//	std::cout << "ERROR:" << TTF_GetError() << std::endl;
+
+ 	//}
 	// create window instance
+
+	// convert score to string
+	stringstream pScore;
+	pScore << score;
+	times = TTF_OpenFont("times.ttf", 14);
+	playerScoreRect.x = 50.0f;
+	playerScoreRect.y = 50.0f;
+	SDL_Surface *PlayerScoreSurface = TTF_RenderText_Solid(times, pScore.str().c_str(), fontColor);
+	SDL_BlitSurface(PlayerScoreSurface, NULL,bk, &playerScoreRect);
+	
+	
 	window = SDL_CreateWindow("game ", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED, 800, 600, 0 );
 	// -1 means first diplay detected
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 	SDL_Rect bkrect = { 0,0, 800, 600};
 	Initialize();
+	//SDL_BlitSurface(PlayerScoreSurface, NULL,window, &playerScoreRect);
 	bat = SDL_LoadBMP("bat.bmp");
 	ball = SDL_LoadBMP("ball.bmp");
 	bk = SDL_LoadBMP("bk.bmp");
