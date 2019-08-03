@@ -2,7 +2,7 @@
 #include <SDL.h>
 #include <iostream>
 //#include <SDL/SDL_ttf.h>
-#include <SDL_ttf.h>
+//#include <SDL_ttf.h>
 #include <string>
 #include<sstream>
 using namespace std;
@@ -12,6 +12,7 @@ void Destroy();
 void GameOver();
 SDL_Window *window;
 SDL_Renderer *renderer;
+
 SDL_Surface *bat;
 SDL_Surface *ball;
 SDL_Surface *bk;
@@ -24,7 +25,10 @@ SDL_Texture *batTexture;
 
 SDL_Event event;
 bool bQuit = false;
+bool bBallSpeedUp;
 bool bBallHitBat = false;
+int bounceBrickx = 100;
+int bounceBRicky = 20;
 int	ballx = 1;
 int bally = 10;
 int ballVelx = 1;
@@ -40,10 +44,14 @@ int score = 0;
 int deleteBrickCount = 0;
 int numberOfBricks = 7;
 SDL_Surface *brick;
+SDL_Surface *bounceBrick;
 SDL_Texture *brickTexture;
+SDL_Texture *bounceBrickTexture;
+SDL_Rect bounceBrickRect;
 SDL_Rect brickRect[3][6];
 SDL_Rect ballrect;
-TTF_Font *times;
+
+//TTF_Font *times;
 SDL_Color fontColor{ 255,0,255 };
 // location of score 
 SDL_Rect playerScoreRect;
@@ -64,19 +72,23 @@ void Destroy()
 	SDL_DestroyTexture(ballTexture);
 	SDL_FreeSurface(bat);
 	SDL_FreeSurface(brick);
-	SDL_FreeSurface(bk);
+SDL_FreeSurface(bk);
 	SDL_FreeSurface(ball);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
+	//SDL_DestroyRenderer(renderer);
+	//SDL_DestroyWindow(window);
 }
 void Initialize()
 {
+	//Destroy();
 		// need a better way to do this maybe for loop
 		// dynamic array
 	playerScoreRect.x =50;
 	playerScoreRect.y =700;
 	bBallHitBat = false;
 	score = 0;
+	deleteBrickCount = 0;
+
+	
 	brickRect[0][0] = { 50, 50, brickW, brickH };
 	brickRect[0][1] = { 150, 50, brickW, brickH };
 	brickRect[0][2] = { 250, 50, brickW, brickH };
@@ -98,11 +110,11 @@ void EventHandler()
 	{
 		if (event.key.keysym.sym == SDLK_LEFT && batx > 0)
 		{
-			batx = batx - 2;
+			batx = batx - 4;
 		}
 		 if (event.key.keysym.sym == SDLK_RIGHT&& batx< bkw-60)
 		{
-			batx = batx + 2;
+			batx = batx + 4;
 		}
 	}
 }
@@ -122,6 +134,8 @@ void GameOver()
 	SDL_Delay(2);
 //	Destroy();
 	//SDL_Quit();
+	ballVelx = 1;
+	ballVely = 1;
 	deleteBrickCount = 0;
 	score = 0;
 	ballx = 0;
@@ -213,14 +227,24 @@ void ballBrickCol()
 
 void winning()
 {
-	SDL_Surface *winSurface = SDL_LoadBMP("bk.bmp");
-	SDL_Texture *winTexture = SDL_CreateTextureFromSurface(renderer, winSurface);
-	SDL_Rect winRect{ 250,200, 350, 350 };
-	SDL_RenderCopy(renderer, winTexture, NULL, &winRect);
-	SDL_RenderPresent(renderer);
-	SDL_Delay(30000);
-	Destroy();
-	SDL_Quit();
+
+	if (bBallSpeedUp == true)
+	{
+		ballVelx = 2;
+		ballVely =2 ;
+		bBallSpeedUp = false;
+	}
+	Initialize();
+	//SDL_Surface *winSurface = SDL_LoadBMP("bk.bmp");
+	//SDL_Texture *winTexture = SDL_CreateTextureFromSurface(renderer, winSurface);
+	//SDL_Rect winRect{ 250,200, 350, 350 };
+	//SDL_RenderCopy(renderer, winTexture, NULL, &winRect);
+	//SDL_RenderPresent(renderer);
+	//SDL_Delay(30000);
+	///Destroy();
+	//SDL_Quit();
+
+
 }
 
 						// brickrect		// ballrect
@@ -240,11 +264,11 @@ int main(int argc, char *argv[])
 	// convert score to string
 	stringstream pScore;
 	pScore << score;
-	times = TTF_OpenFont("times.ttf", 14);
+	//times = TTF_OpenFont("times.ttf", 14);
 	playerScoreRect.x = 50.0f;
 	playerScoreRect.y = 50.0f;
-	SDL_Surface *PlayerScoreSurface = TTF_RenderText_Solid(times, pScore.str().c_str(), fontColor);
-	SDL_BlitSurface(PlayerScoreSurface, NULL,bk, &playerScoreRect);
+	//SDL_Surface *PlayerScoreSurface = TTF_RenderText_Solid(times, pScore.str().c_str(), fontColor);
+//	SDL_BlitSurface(PlayerScoreSurface, NULL,bk, &playerScoreRect);
 	
 	
 	window = SDL_CreateWindow("game ", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED, 800, 600, 0 );
@@ -253,10 +277,12 @@ int main(int argc, char *argv[])
 	SDL_Rect bkrect = { 0,0, 800, 600};
 	Initialize();
 	//SDL_BlitSurface(PlayerScoreSurface, NULL,window, &playerScoreRect);
+	bounceBrick = SDL_LoadBMP("bat.bmp");
 	bat = SDL_LoadBMP("bat.bmp");
 	ball = SDL_LoadBMP("ball.bmp");
 	bk = SDL_LoadBMP("bk.bmp");
 	brick = SDL_LoadBMP("brick.bmp");
+	bounceBrickTexture = SDL_CreateTextureFromSurface(renderer, bounceBrick);
 	ballTexture = SDL_CreateTextureFromSurface(renderer, ball);
 	bkTexture = SDL_CreateTextureFromSurface(renderer, bk);
 	batTexture = SDL_CreateTextureFromSurface(renderer, bat);
@@ -269,6 +295,7 @@ int main(int argc, char *argv[])
 		SDL_Delay(5);
 		SDL_Rect batrect = { batx, baty, 60, 30 };
 		ballrect = { ballx, bally, 20,30 };
+		bounceBrickRect = { bounceBrickx, bounceBRicky,  90,30 };
 
 		moveBall();
 		ballCollisoin();
@@ -276,14 +303,16 @@ int main(int argc, char *argv[])
 		EventHandler();
 		if (deleteBrickCount == numberOfBricks)
 		{
-		//	winning();
-			GameOver();
+			bBallSpeedUp = true;
+			winning();
+			//GameOver();
 		}
 	
 		// not sure this is a good one, renderering background everyframe
 		// need to check this later
 		SDL_RenderCopy(renderer, bkTexture, NULL, &bkrect);
 		SDL_RenderCopy(renderer, ballTexture, NULL, &ballrect);
+		SDL_RenderCopy(renderer, bounceBrickTexture, NULL, &bounceBrickRect);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][0]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][1]);
 		SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[0][2]);
